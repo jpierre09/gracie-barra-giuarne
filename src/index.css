@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+  .glass-modal {
+    background: rgba(10, 10, 12, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .gradient-overlay {
+    background: radial-gradient(circle at top right, rgba(0, 85, 150, 0.18), transparent 45%),
+                radial-gradient(circle at bottom left, rgba(200, 16, 46, 0.12), transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(10, 10, 15, 0.8), #050505);
+  }
+  .accent-blue {
+    color: #005596;
+  }
+  .bg-accent-blue {
+    background-color: #005596;
+  }
+  .accent-red {
+    color: #C8102E;
+  }
+  .bg-accent-red {
+    background-color: #C8102E;
+  }
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(0, 85, 150, 0.35);
+  }
+  .glow-red {
+    box-shadow: 0 0 20px rgba(200, 16, 46, 0.35);
+  }
+}
+
+body {
+  background-color: #050505;
+  color: #e2e8f0;
+  font-family: 'Helvetica Neue', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+}

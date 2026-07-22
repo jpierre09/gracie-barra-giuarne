@@ -1,0 +1,6 @@
+{
+  "name": "Gracie Barra Guarne - PWA Jiu-Jitsu",
+  "description": "Sistema de gestión y PWA para el equipo Gracie Barra Guarne con autenticación Google, control de acceso por roles (RBAC), pagos y alertas automáticas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

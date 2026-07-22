@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración - Gracie Barra Guarne{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Top Admin Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+        <div>
+            <div class="inline-flex items-center gap-2 text-xs text-red-400 font-bold uppercase tracking-wider bg-red-950/50 px-3 py-1 rounded-full border border-red-900/50">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Panel Protegido de Administrador
+            </div>
+            <h2 class="text-2xl font-black text-white mt-1">Gestión Gracie Barra Guarne</h2>
+            <p class="text-xs text-slate-400">Control de ingresos, mensualidades de estudiantes y alertas automáticas</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <a href="/enviar-alertas/" class="inline-flex items-center gap-2 bg-gb-red hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg border border-red-500/30">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                Enviar Recordatorios Automáticos
+            </a>
+        </div>
+    </div>
+
+    <!-- Analytics Metrics Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Revenue Card -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl"></div>
+            <p class="text-xs text-slate-400 font-medium">Ingresos Totales (Mes)</p>
+            <p class="text-2xl font-black text-emerald-400 mt-1">${{ total_revenue|floatformat:0 }} COP</p>
+            <p class="text-[10px] text-emerald-500/80 mt-2 font-medium">✓ Pagos aprobados en sistema</p>
+        </div>
+
+        <!-- Outstanding Balances Card -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-red-500/10 rounded-full blur-xl"></div>
+            <p class="text-xs text-slate-400 font-medium">Saldos Pendientes / Vencidos</p>
+            <p class="text-2xl font-black text-red-400 mt-1">${{ outstanding_balances|floatformat:0 }} COP</p>
+            <p class="text-[10px] text-red-500/80 mt-2 font-medium">⚠️ Por cobrar en mensualidades</p>
+        </div>
+
+        <!-- Active Students Card -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-lg">
+            <p class="text-xs text-slate-400 font-medium">Estudiantes Activos</p>
+            <p class="text-2xl font-black text-blue-400 mt-1">{{ active_students }} / {{ total_students }}</p>
+            <p class="text-[10px] text-slate-500 mt-2">Inscritos en la academia</p>
+        </div>
+
+        <!-- Retention / Belt Card -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-lg">
+            <p class="text-xs text-slate-400 font-medium">Filosofía y Grados</p>
+            <p class="text-2xl font-black text-slate-100 mt-1">Gracie Barra</p>
+            <p class="text-[10px] text-slate-500 mt-2">Organizado para Guarne, Antioquia</p>
+        </div>
+    </div>
+
+    <!-- Student Roster Table -->
+    <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+        <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-white">Nómina de Estudiantes</h3>
+                <p class="text-xs text-slate-400">Estado de pago y cinturones de todos los alumnos</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 uppercase text-[10px] text-slate-400 font-bold border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Estudiante</th>
+                        <th class="py-3.5 px-4">Cinturón</th>
+                        <th class="py-3.5 px-4">Teléfono</th>
+                        <th class="py-3.5 px-4">Mensualidad</th>
+                        <th class="py-3.5 px-4">Estado de Pago</th>
+                        <th class="py-3.5 px-4">Día Vencimiento</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-800/50 transition">
+                        <td class="py-3.5 px-4 font-semibold text-white">
+                            {{ student.user.get_full_name|default:student.user.username }}
+                            <div class="text-[10px] text-slate-500 font-normal">{{ student.user.email }}</div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-200 border border-slate-700">
+                                {{ student.get_cinturon_display }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ student.telefono|default:"Sin registrar" }}</td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-white">${{ student.monto_mensualidad|floatformat:0 }} COP</td>
+                        <td class="py-3.5 px-4">
+                            {% if student.estado_pago == 'PAGADO' %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                                ✓ Pagado
+                            </span>
+                            {% elif student.estado_pago == 'PENDIENTE' %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800/60">
+                                ⏳ Pendiente
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-950 text-red-400 border border-red-800/60">
+                                ⚠️ Vencido
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400 font-medium">Día {{ student.dia_vencimiento }} del mes</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-500">No hay estudiantes registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Payments & Verification Table -->
+    <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+        <div class="p-5 border-b border-slate-800">
+            <h3 class="text-lg font-bold text-white">Reportes de Pago Recientes</h3>
+            <p class="text-xs text-slate-400">Verifica y aprueba los comprobantes subidos por los alumnos</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 uppercase text-[10px] text-slate-400 font-bold border-b border-slate-800">
+                    <tr>
+                        <th class="py-3.5 px-4">Fecha</th>
+                        <th class="py-3.5 px-4">Estudiante</th>
+                        <th class="py-3.5 px-4">Mes / Periodo</th>
+                        <th class="py-3.5 px-4">Monto</th>
+                        <th class="py-3.5 px-4">Método / Ref</th>
+                        <th class="py-3.5 px-4">Estado</th>
+                        <th class="py-3.5 px-4 text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for pago in recent_payments %}
+                    <tr class="hover:bg-slate-800/50 transition">
+                        <td class="py-3.5 px-4 text-slate-400">{{ pago.fecha_pago|date:"d/m/Y" }}</td>
+                        <td class="py-3.5 px-4 font-semibold text-white">{{ pago.estudiante.user.get_full_name|default:pago.estudiante.user.username }}</td>
+                        <td class="py-3.5 px-4 font-medium text-slate-300">{{ pago.mes_anio }}</td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-emerald-400">${{ pago.monto|floatformat:0 }} COP</td>
+                        <td class="py-3.5 px-4 text-slate-400">
+                            {{ pago.get_metodo_pago_display }}
+                            {% if pago.referencia %}<div class="text-[10px] text-slate-500 font-mono">Ref: {{ pago.referencia }}</div>{% endif %}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if pago.estado == 'APROBADO' %}
+                            <span class="text-emerald-400 font-bold">Aprobado</span>
+                            {% elif pago.estado == 'RECHAZADO' %}
+                            <span class="text-red-400 font-bold">Rechazado</span>
+                            {% else %}
+                            <span class="text-amber-400 font-bold">Pendiente Revisión</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            {% if pago.estado == 'PENDIENTE_VERIFICACION' %}
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="/aprobar-pago/{{ pago.id }}/?accion=aprobar" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1 rounded text-[10px]">
+                                    Aprobar
+                                </a>
+                                <a href="/aprobar-pago/{{ pago.id }}/?accion=rechazar" class="bg-red-800 hover:bg-red-700 text-white font-bold px-2.5 py-1 rounded text-[10px]">
+                                    Rechazar
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="text-slate-500 text-[10px]">Completado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-500">No hay pagos registrados aún.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

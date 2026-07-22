@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil - Gracie Barra Guarne{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- Student Header Card -->
+    <div class="bg-gradient-to-r from-gb-darkblue to-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-2xl bg-gb-red flex items-center justify-center font-extrabold text-white text-2xl shadow-lg border-2 border-white/20">
+                GB
+            </div>
+            <div>
+                <span class="text-xs text-red-400 font-bold uppercase tracking-wider">Perfil Privado del Estudiante</span>
+                <h2 class="text-2xl font-black text-white">{{ user.get_full_name|default:user.username }}</h2>
+                <p class="text-xs text-slate-300 mt-0.5">{{ user.email }}</p>
+            </div>
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div>
+                <span class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Grado / Cinturón</span>
+                <p class="text-sm font-extrabold text-white mt-0.5">{{ profile.get_cinturon_display }}</p>
+            </div>
+            <div>
+                <span class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Cuota Mensual</span>
+                <p class="text-sm font-extrabold text-slate-100 mt-0.5">${{ profile.monto_mensualidad|floatformat:0 }} COP</p>
+            </div>
+            <div>
+                <span class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Día de Pago</span>
+                <p class="text-sm font-extrabold text-slate-100 mt-0.5">Día {{ profile.dia_vencimiento }} del mes</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personal Payment Status Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white">Mi Estado de Pago</h3>
+            {% if profile.estado_pago == 'PAGADO' %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                ✓ Al Día (Pagado)
+            </span>
+            {% elif profile.estado_pago == 'PENDIENTE' %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-400 border border-amber-800">
+                ⏳ Pago Pendiente
+            </span>
+            {% else %}
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-red-950 text-red-400 border border-red-800">
+                ⚠️ Pago Vencido
+            </span>
+            {% endif %}
+        </div>
+
+        <p class="text-xs text-slate-400">
+            Mantén al día tu mensualidad para continuar con tus entrenamientos en el Tatami Gracie Barra Guarne.
+        </p>
+
+        <!-- Payment Report Form -->
+        <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-5 mt-4">
+            <h4 class="text-sm font-bold text-white mb-3">Reportar Comprobante de Pago</h4>
+            <form action="/reportar-pago/" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Mes a Reportar</label>
+                        <input type="text" name="mes_anio" value="Julio 2026" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Monto Cancelado (COP)</label>
+                        <input type="number" name="monto" value="{{ profile.monto_mensualidad|floatformat:0 }}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Método de Pago</label>
+                        <select name="metodo_pago" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                            <option value="NEQUI">Nequi</option>
+                            <option value="BANCOLOMBIA">Bancolombia</option>
+                            <option value="EFECTIVO">Efectivo al Profesor</option>
+                            <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Número de Referencia / Nro Transacción</label>
+                        <input type="text" name="referencia" placeholder="Ej. 98451230" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-gb-red hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-lg">
+                    Enviar Comprobante para Verificación
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Personal Payment History -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h3 class="text-base font-bold text-white mb-4">Historial de Mis Pagos</h3>
+        
+        <div class="space-y-3">
+            {% for pago in pagos %}
+            <div class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl">
+                <div>
+                    <p class="text-xs font-bold text-white">{{ pago.mes_anio }}</p>
+                    <p class="text-[10px] text-slate-400">{{ pago.fecha_pago|date:"d/m/Y" }} • {{ pago.get_metodo_pago_display }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-mono font-bold text-emerald-400">${{ pago.monto|floatformat:0 }} COP</p>
+                    <span class="text-[10px] font-semibold text-slate-400">{{ pago.get_estado_display }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-slate-500 text-center py-4">No tienes pagos registrados en el historial.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
