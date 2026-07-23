@@ -7,12 +7,14 @@ interface RegisterStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRegisterStudent: (newStudent: Partial<UserProfile>) => void;
+  globalFee?: number;
 }
 
 export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
   isOpen,
   onClose,
   onRegisterStudent,
+  globalFee = 0,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,7 +31,7 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
       email,
       telefono,
       cinturon,
-      montoMensualidad: 120000, // Tarifa global asignada automáticamente
+      montoMensualidad: globalFee, // Tarifa global asignada automáticamente
       diaVencimiento,
       role: 'STUDENT',
       estadoPago: 'PENDIENTE',
@@ -136,10 +138,10 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
                 Tarifa Mensual Inicial
               </span>
               <p className="text-xs font-mono font-bold text-emerald-400 mt-0.5">
-                $120,000 COP
+                ${globalFee.toLocaleString('es-CO')} COP
               </p>
               <p className="text-[10px] text-slate-400 mt-0.5">
-                Asignada automáticamente por defecto.
+                Asignada automáticamente desde la base de datos.
               </p>
             </div>
           </div>

@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.conf import settings
 from allauth.account.signals import user_signed_up, user_logged_in
-from .models import UserProfile
+from .models import UserProfile, ConfiguracionAcademia
 
 def sync_user_role(user):
     """
@@ -19,12 +19,14 @@ def sync_user_role(user):
     is_admin = bool(user_email and user_email == admin_email)
     target_role = 'ADMIN' if is_admin else 'STUDENT'
 
+    tarifa_actual = ConfiguracionAcademia.get_tarifa_actual()
+
     profile, created = UserProfile.objects.get_or_create(
         user=user,
         defaults={
             'role': target_role,
             'cinturon': 'BLANCO',
-            'monto_mensualidad': 120000.00,
+            'monto_mensualidad': tarifa_actual,
             'dia_vencimiento': 5,
             'estado_pago': 'PENDIENTE'
         }

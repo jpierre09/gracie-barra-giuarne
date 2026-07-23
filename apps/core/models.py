@@ -48,7 +48,7 @@ class UserProfile(models.Model):
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='STUDENT')
     cinturon = models.CharField(max_length=10, choices=CINTURON_CHOICES, default='BLANCO')
     telefono = models.CharField(max_length=20, blank=True, null=True)
-    monto_mensualidad = models.DecimalField(max_digits=10, decimal_places=2, default=120000.00)
+    monto_mensualidad = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     dia_vencimiento = models.IntegerField(default=5)  # Día del mes
     estado_pago = models.CharField(max_length=10, choices=ESTADO_PAGO_CHOICES, default='PENDIENTE')
     activo = models.BooleanField(default=True)
@@ -101,12 +101,12 @@ class AlertaEmail(models.Model):
 
 
 class ConfiguracionAcademia(models.Model):
-    tarifa_mensual_base = models.DecimalField(max_digits=10, decimal_places=2, default=120000.00)
+    tarifa_mensual_base = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     actualizado_en = models.DateTimeField(auto_now=True)
 
     @classmethod
     def get_tarifa_actual(cls):
-        config, _ = cls.objects.get_or_create(id=1, defaults={'tarifa_mensual_base': 120000.00})
+        config, _ = cls.objects.get_or_create(id=1, defaults={'tarifa_mensual_base': 0.00})
         return config.tarifa_mensual_base
 
     def __str__(self):

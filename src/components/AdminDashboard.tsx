@@ -55,9 +55,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Dynamic Fee Management Modal State (RBAC Protected)
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
-  const [generalFeeInput, setGeneralFeeInput] = useState<number>(120000);
+  const [generalFeeInput, setGeneralFeeInput] = useState<number>(0);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
-  const [studentFeeInput, setStudentFeeInput] = useState<number>(120000);
+  const [studentFeeInput, setStudentFeeInput] = useState<number>(0);
   const [feeSaveSuccessMsg, setFeeSaveSuccessMsg] = useState<string | null>(null);
 
   // Security Protection Check (RBAC)

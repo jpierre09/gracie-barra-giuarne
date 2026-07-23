@@ -55,12 +55,15 @@ def admin_dashboard(request):
         action = request.POST.get('action')
         
         if action == 'update_global_fee':
-            monto_input = request.POST.get('monto_general', '120000').strip()
+            monto_input = request.POST.get('monto_general', '0').strip()
             try:
                 nuevo_monto = float(monto_input)
                 config, _ = ConfiguracionAcademia.objects.get_or_create(id=1)
                 config.tarifa_mensual_base = nuevo_monto
                 config.save()
+
+                # Actualizar dinámicamente la tarifa de TODOS los estudiantes en la base de datos
+                UserProfile.objects.filter(role='STUDENT').update(monto_mensualidad=nuevo_monto)
             except ValueError:
                 pass
             return redirect('admin_dashboard')
