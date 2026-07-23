@@ -18,9 +18,31 @@ def index_view(request):
         return redirect('admin_dashboard')
     return redirect('student_profile')
 
+from django.contrib.auth import authenticate, login
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('index')
+    
+    if request.method == 'POST':
+        username_input = request.POST.get('username', '').strip()
+        password_input = request.POST.get('password', '').strip()
+
+        # Try authenticating by username or email
+        user = authenticate(request, username=username_input, password=password_input)
+        if user is None and '@' in username_input:
+            try:
+                user_obj = User.objects.get(email__iexact=username_input)
+                user = authenticate(request, username=user_obj.username, password=password_input)
+            except User.DoesNotExist:
+                user = None
+
+        if user is not None:
+            login(request, user)
+            return redirect('index')
+        else:
+            return render(request, 'login.html', {'error': 'Usuario o contraseña incorrectos.'})
+
     return render(request, 'login.html')
 
 @login_required
