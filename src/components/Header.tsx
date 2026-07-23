@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProfile } from '../types';
-import { Shield, LogOut, Smartphone, CheckCircle, AlertTriangle } from 'lucide-react';
+import { LogOut, Smartphone } from 'lucide-react';
 
 interface HeaderProps {
   currentUser: UserProfile | null;
@@ -17,7 +17,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLogin,
   isPWAInstalled,
   onInstallPWA,
-  isOnline,
 }) => {
   return (
     <header className="glass border-b border-white/10 sticky top-0 z-40 shadow-2xl backdrop-blur-xl bg-[#050505]/80">
@@ -61,16 +60,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Instalar App</span>
             </button>
           )}
-
-          {/* Connection Indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 glass rounded-md border border-white/10 text-[10px] font-mono text-slate-300">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-              }`}
-            ></span>
-            <span className="hidden md:inline">{isOnline ? 'Servidor Docker: OK' : 'Modo Offline'}</span>
-          </div>
 
           {/* User Profile / Login */}
           {currentUser ? (
