@@ -103,9 +103,34 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [d for d in [BASE_DIR / 'static', BASE_DIR / 'dist'] if d.exists()]
+# Only Django/admin/allauth's own static files go through STATIC_URL + collectstatic.
+# The Vite build is served separately below via WHITENOISE_ROOT, since Vite writes
+# root-relative paths ("/assets/...", "/manifest.json") that don't live under /static/.
+STATICFILES_DIRS = [d for d in [BASE_DIR / 'static'] if d.exists()]
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# --- PWA / Vite build serving (WhiteNoise) ---
+# `npm run build` emits dist/index.html referencing root-relative paths like
+# "/assets/index-HASH.js" and "/manifest.json" (see dist/index.html), NOT paths under
+# STATIC_URL. WHITENOISE_ROOT makes WhiteNoiseMiddleware also serve every file under
+# dist/ directly at the URL root. Because WhiteNoiseMiddleware intercepts matching
+# requests before Django's URLconf resolves them, this ensures /assets/*, /manifest.json,
+# /service-worker.js and the PWA icons are answered with their real file (and correct
+# on-disk mimetype: application/javascript, text/css, application/json, ...) instead of
+# falling through to the SPA catch-all in apps/core/urls.py, which was returning
+# dist/index.html (text/html) for those requests and triggering the browser's strict
+# MIME-type checks for module scripts, stylesheets and the manifest.
+WHITENOISE_ROOT = BASE_DIR / 'dist'
+
+# Vite's bundle filenames are content-hashed ("index-Dg0857Gz.js") and dist/assets/ is
+# fully regenerated on every build, so everything under /assets/ can be cached forever.
+# WhiteNoise's built-in immutable-file detection only recognizes hashed names living
+# under STATIC_URL, so it must be told explicitly about the root-served /assets/ path.
+# Root-level PWA files (manifest.json, service-worker.js, icons) are NOT hashed and
+# intentionally fall back to the default WHITENOISE_MAX_AGE (60s) below, so a new
+# Service Worker is picked up quickly instead of being cached for a year.
+WHITENOISE_IMMUTABLE_FILE_TEST = r'^/assets/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

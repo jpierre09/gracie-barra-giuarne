@@ -1,0 +1,24 @@
+{
+  "short_name": "GB Guarne",
+  "name": "Gracie Barra Guarne - Jiu-Jitsu",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#050505",
+  "theme_color": "#C8102E",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "App oficial del equipo Gracie Barra Guarne Jiu-Jitsu",
+  "lang": "es-CO"
+}
+
