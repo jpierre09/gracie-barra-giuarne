@@ -651,7 +651,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white uppercase tracking-tight">
-                    Gestión Dinámica de Tarifas (RBAC)
+                    Gestión Dinámica de Tarifas
                   </h3>
                   <p className="text-[11px] text-slate-400">
                     Exclusivo Administrador. Modifica las tarifas generales o cuotas individuales de los alumnos.
@@ -747,7 +747,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onClick={handleApplyGeneralFee}
                   className="shrink-0 bg-[#005596] hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition uppercase tracking-wider"
                 >
-                  Aplicar a Todos
+                  Aplicar
                 </button>
               </div>
             </div>

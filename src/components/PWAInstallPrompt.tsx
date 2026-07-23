@@ -26,7 +26,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onInstall, i
               Instalar App Gracie Barra Guarne
             </h4>
             <p className="text-[11px] text-slate-300 mt-0.5">
-              Instala la aplicación en tu pantalla de inicio en Android o iOS para acceso rápido sin tiendas.
+              Instala la aplicación en tu pantalla de inicio en Android o iOS para acceso rapido.
             </p>
           </div>
         </div>

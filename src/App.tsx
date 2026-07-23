@@ -320,7 +320,7 @@ export default function App() {
                 Gracie Barra Guarne
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Bienvenido al portal oficial PWA de la escuela de Jiu-Jitsu. Por favor inicia sesión con tu cuenta de Google.
+                Bienvenido al portal oficial de Gracie Barra Guarne.
               </p>
             </div>
             <button
