@@ -49,9 +49,6 @@ COPY --from=frontend-builder /app/dist /app/dist
 # Crear directorios obligatorios para archivos estáticos y multimedia
 RUN mkdir -p /app/media /app/staticfiles
 
-# Declarar volumen persistente para los comprobantes
-VOLUME ["/app/media"]
-
 # Recolectar estáticos para Whitenoise/Django
 RUN python manage.py collectstatic --noinput || true
 
