@@ -104,6 +104,7 @@ def api_me(request):
     })
 
 
+@csrf_exempt
 def api_students(request):
     """
     GET /api/students/ - List all students
@@ -172,8 +173,12 @@ def api_students(request):
                 'email': user.email,
                 'role': 'STUDENT',
                 'cinturon': profile.cinturon,
+                'telefono': profile.telefono or '+57 300 000 0000',
                 'montoMensualidad': float(profile.monto_mensualidad),
-                'estadoPago': profile.estado_pago
+                'diaVencimiento': profile.dia_vencimiento,
+                'estadoPago': profile.estado_pago,
+                'activo': profile.activo,
+                'fechaRegistro': profile.fecha_registro.strftime('%Y-%m-%d')
             }
         })
 
@@ -200,7 +205,7 @@ def api_payments(request):
                 'fechaPago': p.fecha_pago.strftime('%Y-%m-%d'),
                 'metodoPago': p.metodo_pago,
                 'referencia': p.referencia,
-                'comprobanteUrl': p.comprobante_url or (p.comprobante_imagen.url if p.comprobante_imagen else ''),
+                'comprobanteUrl': p.comprobante_url or (p.comprobante.url if p.comprobante else ''),
                 'notas': p.notas or ''
             })
         return JsonResponse({'payments': data})
@@ -242,7 +247,7 @@ def api_payments(request):
             metodo_pago=metodo,
             referencia=referencia,
             comprobante_url=comprobante_url,
-            comprobante_imagen=comprobante_file
+            comprobante=comprobante_file
         )
 
         profile.estado_pago = 'PENDIENTE'
@@ -258,11 +263,39 @@ def api_payments(request):
                 'monto': float(pago.monto),
                 'estado': pago.estado,
                 'referencia': pago.referencia,
-                'comprobanteUrl': pago.comprobante_url or (pago.comprobante_imagen.url if pago.comprobante_imagen else '')
+                'comprobanteUrl': pago.comprobante_url or (pago.comprobante.url if pago.comprobante else '')
             }
         })
 
     return JsonResponse({'error': 'Método no soportado'}, status=405)
+
+
+@csrf_exempt
+def api_update_student_fee(request, student_id):
+    """
+    POST /api/students/<id>/update-fee/
+    Updates the individual monthly fee of a single student in PostgreSQL.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    profile = get_object_or_404(UserProfile, id=student_id, role='STUDENT')
+    try:
+        body = json.loads(request.body.decode('utf-8')) if request.body else {}
+        monto = float(body.get('monto') if body.get('monto') is not None else request.POST.get('monto', 0))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Monto inválido'}, status=400)
+
+    profile.monto_mensualidad = monto
+    profile.save(update_fields=['monto_mensualidad'])
+
+    return JsonResponse({
+        'success': True,
+        'student': {
+            'id': str(profile.id),
+            'montoMensualidad': float(profile.monto_mensualidad)
+        }
+    })
 
 
 @csrf_exempt
@@ -310,3 +343,25 @@ def api_send_reminders(request):
         count += 1
 
     return JsonResponse({'success': True, 'count': count, 'message': f'Recordatorios enviados a {count} estudiantes.'})
+
+
+def api_alerts(request):
+    """
+    GET /api/alerts/
+    Lists the history of automated payment reminder emails sent, from PostgreSQL.
+    """
+    alertas = AlertaEmail.objects.select_related('estudiante__user').order_by('-fecha_envio')
+    data = []
+    for a in alertas:
+        data.append({
+            'id': str(a.id),
+            'studentId': str(a.estudiante.id),
+            'studentName': a.estudiante.user.get_full_name() or a.estudiante.user.username,
+            'studentEmail': a.estudiante.user.email or '',
+            'tipoAlerta': a.tipo_alerta,
+            'asunto': a.asunto,
+            'mensaje': a.mensaje,
+            'fechaEnvio': a.fecha_envio.strftime('%Y-%m-%d %H:%M'),
+            'exitoso': a.exitoso,
+        })
+    return JsonResponse({'alerts': data})

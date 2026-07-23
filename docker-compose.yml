@@ -5,8 +5,6 @@ services:
     build: .
     command: sh -c "python manage.py makemigrations core --noinput && python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:3000 --workers 3 graciebarra.wsgi:application"
     volumes:
-      - .:/app
-      - /app/node_modules
       - media_data:/app/media
     ports:
       - "3000:3000"

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { UserProfile, PaymentRecord, EmailAlertLog } from './types';
-import { INITIAL_STUDENTS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS } from './data/initialData';
+import React, { useState, useEffect, useCallback } from 'react';
+import { UserProfile, PaymentRecord, EmailAlertLog, PaymentMethod } from './types';
 import { Header } from './components/Header';
 import { AdminDashboard } from './components/AdminDashboard';
 import { StudentProfile } from './components/StudentProfile';
@@ -9,23 +8,37 @@ import { RegisterStudentModal } from './components/RegisterStudentModal';
 import { EmailAlertsModal } from './components/EmailAlertsModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
+async function fetchStudents(): Promise<{ students: UserProfile[]; globalFee: number }> {
+  const res = await fetch('/api/students/');
+  const data = await res.json();
+  return {
+    students: Array.isArray(data.students) ? data.students : [],
+    globalFee: typeof data.globalFee === 'number' ? data.globalFee : 0,
+  };
+}
+
+async function fetchPayments(): Promise<PaymentRecord[]> {
+  const res = await fetch('/api/payments/');
+  const data = await res.json();
+  return Array.isArray(data.payments) ? data.payments : [];
+}
+
+async function fetchAlerts(): Promise<EmailAlertLog[]> {
+  const res = await fetch('/api/alerts/');
+  const data = await res.json();
+  return Array.isArray(data.alerts) ? data.alerts : [];
+}
+
 export default function App() {
-  // State Initialization with localStorage Persistence
-  const [students, setStudents] = useState<UserProfile[]>(() => {
-    const saved = localStorage.getItem('gb_guarne_students');
-    return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
-  });
+  // Roster / payments / alerts state is a mirror of PostgreSQL — no seed data, no localStorage cache.
+  const [students, setStudents] = useState<UserProfile[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [alertsHistory, setAlertsHistory] = useState<EmailAlertLog[]>([]);
+  const [globalFee, setGlobalFee] = useState<number>(0);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
-  const [payments, setPayments] = useState<PaymentRecord[]>(() => {
-    const saved = localStorage.getItem('gb_guarne_payments');
-    return saved ? JSON.parse(saved) : INITIAL_PAYMENTS;
-  });
-
-  const [alertsHistory, setAlertsHistory] = useState<EmailAlertLog[]>(() => {
-    const saved = localStorage.getItem('gb_guarne_alerts');
-    return saved ? JSON.parse(saved) : INITIAL_ALERT_LOGS;
-  });
-
+  // Session identity only — who is logged in survives a refresh, but their data (fee, status, etc.)
+  // is always re-read from the DB below, never trusted from this cached copy.
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('gb_guarne_current_user');
     return saved ? JSON.parse(saved) : null;
@@ -41,45 +54,45 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
 
-  // Sync initial configuration & state from Django REST API
-  useEffect(() => {
-    fetch('/api/config/')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data.tarifa_mensual_base === 'number') {
-          const globalFee = data.tarifa_mensual_base;
-          setStudents((prev) =>
-            prev.map((s) => (s.role === 'STUDENT' ? { ...s, montoMensualidad: globalFee } : s))
-          );
-          setCurrentUser((prev) =>
-            prev && prev.role === 'STUDENT' ? { ...prev, montoMensualidad: globalFee } : prev
-          );
-        }
-      })
-      .catch(() => {});
+  // Single source of truth: re-pull the roster, payments and alert log straight from the
+  // Django REST API (backed by PostgreSQL). Every button in the Admin panel calls this
+  // right after its mutation so the screen updates instantly, without an F5.
+  const refreshDashboardData = useCallback(async () => {
+    const [studentsResult, paymentsResult, alertsResult] = await Promise.all([
+      fetchStudents(),
+      fetchPayments(),
+      fetchAlerts(),
+    ]);
 
-    fetch('/api/me/')
-      .then((res) => res.json())
-      .then((data) => {
+    setStudents(studentsResult.students);
+    setGlobalFee(studentsResult.globalFee);
+    setPayments(paymentsResult);
+    setAlertsHistory(alertsResult);
+
+    setCurrentUser((prev) => {
+      if (!prev || prev.role !== 'STUDENT') return prev;
+      const fresh = studentsResult.students.find((s) => s.id === prev.id);
+      return fresh ? { ...prev, ...fresh } : prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setIsLoadingData(true);
+      await refreshDashboardData();
+      setIsLoadingData(false);
+
+      try {
+        const res = await fetch('/api/me/');
+        const data = await res.json();
         if (data && data.authenticated && data.user) {
           setCurrentUser(data.user);
         }
-      })
-      .catch(() => {});
-  }, []);
-
-  // Save changes to localStorage
-  useEffect(() => {
-    localStorage.setItem('gb_guarne_students', JSON.stringify(students));
-  }, [students]);
-
-  useEffect(() => {
-    localStorage.setItem('gb_guarne_payments', JSON.stringify(payments));
-  }, [payments]);
-
-  useEffect(() => {
-    localStorage.setItem('gb_guarne_alerts', JSON.stringify(alertsHistory));
-  }, [alertsHistory]);
+      } catch {
+        // No hay sesión real de Django/allauth activa; se conserva la sesión local, si existe.
+      }
+    })();
+  }, [refreshDashboardData]);
 
   useEffect(() => {
     if (currentUser) {
@@ -97,7 +110,6 @@ export default function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // PWA Install Prompt Listener
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -116,7 +128,6 @@ export default function App() {
     };
   }, []);
 
-  // Handle PWA Install Action
   const handleInstallPWA = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -132,37 +143,54 @@ export default function App() {
     }
   };
 
-  // Google Sign-In or Role Selector
-  const handleGoogleSignIn = (googleUserData: Partial<UserProfile>) => {
+  // Login / Google Sign-In. Para ADMIN solo se asigna el rol de sesión (no tiene fila en
+  // /api/students/, que solo lista STUDENT). Para STUDENT se usa el mismo endpoint de
+  // registro para obtener-o-crear el perfil REAL en PostgreSQL, de modo que el id del
+  // usuario en pantalla sea siempre un id real de la base de datos.
+  const handleGoogleSignIn = async (googleUserData: Partial<UserProfile>) => {
     const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'profesor@graciebarra.com').toLowerCase().trim();
     const userEmail = (googleUserData.email || '').toLowerCase().trim();
-    const assignedRole = userEmail === adminEmail ? 'ADMIN' : (googleUserData.role || 'STUDENT');
+    const assignedRole = userEmail === adminEmail ? 'ADMIN' : 'STUDENT';
 
-    const existing = students.find((s) => s.email.toLowerCase() === userEmail);
-    if (existing) {
-      const updatedUser = { ...existing, role: assignedRole };
-      setCurrentUser(updatedUser);
-      setStudents((prev) => prev.map((s) => (s.id === existing.id ? updatedUser : s)));
-    } else {
-      const newUser: UserProfile = {
-        id: googleUserData.id || `user-${Date.now()}`,
-        name: googleUserData.name || 'Nuevo Miembro',
-        email: googleUserData.email || 'estudiante@graciebarra.com',
-        avatarUrl:
-          googleUserData.avatarUrl ||
-          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-        role: assignedRole,
-        cinturon: googleUserData.cinturon || 'BLANCO',
+    if (assignedRole === 'ADMIN') {
+      setCurrentUser({
+        id: `admin-${userEmail}`,
+        name: googleUserData.name || 'Profesor / Administrador',
+        email: userEmail,
+        avatarUrl: googleUserData.avatarUrl,
+        role: 'ADMIN',
+        cinturon: googleUserData.cinturon || 'NEGRO',
         telefono: googleUserData.telefono || '+57 300 000 0000',
-        montoMensualidad: googleUserData.montoMensualidad ?? 120000,
-        diaVencimiento: googleUserData.diaVencimiento ?? 5,
-        estadoPago: googleUserData.estadoPago || 'PENDIENTE',
+        montoMensualidad: 0,
+        diaVencimiento: 1,
+        estadoPago: 'PAGADO',
         activo: true,
         fechaRegistro: new Date().toISOString().split('T')[0],
-      };
-      setStudents((prev) => [newUser, ...prev]);
-      setCurrentUser(newUser);
+      });
+      setIsLoginOpen(false);
+      return;
     }
+
+    try {
+      const res = await fetch('/api/students/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: googleUserData.name || userEmail.split('@')[0],
+          email: userEmail,
+          telefono: googleUserData.telefono || '+57 300 000 0000',
+          cinturon: googleUserData.cinturon || 'BLANCO',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.student) {
+        setCurrentUser({ ...data.student, avatarUrl: googleUserData.avatarUrl } as UserProfile);
+        await refreshDashboardData();
+      }
+    } catch {
+      // Backend no disponible: no se crea un estudiante local falso como respaldo.
+    }
+
     setIsLoginOpen(false);
   };
 
@@ -171,36 +199,16 @@ export default function App() {
     setIsLoginOpen(true);
   };
 
-  // Student Payment Reporting Action
-  const handleStudentReportPayment = (
+  // Reporte de pago del estudiante: crea el registro real en PostgreSQL y refresca todo el panel.
+  const handleStudentReportPayment = async (
     mesAnio: string,
     monto: number,
-    metodo: 'NEQUI' | 'BANCOLOMBIA' | 'EFECTIVO' | 'TRANSFERENCIA',
+    metodo: PaymentMethod,
     comprobanteUrl: string
   ) => {
     if (!currentUser) return;
 
-    const now = new Date();
-    const formattedDateTime = `${now.toISOString().split('T')[0]} ${now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}`;
-
-    const newPayment: PaymentRecord = {
-      id: `pay-${Date.now()}`,
-      studentId: currentUser.id,
-      studentName: currentUser.name,
-      mesAnio,
-      monto,
-      estado: 'PENDIENTE_VERIFICACION',
-      fechaPago: formattedDateTime,
-      metodoPago: metodo,
-      referencia: `COMP-${Math.floor(Math.random() * 899999 + 100000)}`,
-      comprobanteUrl,
-      notas: 'Comprobante registrado por el alumno. Pendiente de aprobación por el Profesor.',
-    };
-
-    setPayments((prev) => [newPayment, ...prev]);
-
-    // Send payment report to Django REST API
-    fetch('/api/payments/', {
+    await fetch('/api/payments/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -212,110 +220,69 @@ export default function App() {
       }),
     }).catch(() => {});
 
-    // Update current student state to PENDIENTE (En revisión por aprobar)
-    const updatedUser = { ...currentUser, estadoPago: 'PENDIENTE' as const };
-    setCurrentUser(updatedUser);
-    setStudents((prev) => prev.map((s) => (s.id === currentUser.id ? updatedUser : s)));
+    await refreshDashboardData();
   };
 
-  // Admin Payment Approval / Rejection Action
-  const handleApprovePayment = (paymentId: string) => {
-    const payment = payments.find((p) => p.id === paymentId);
-    if (!payment) return;
-
-    setPayments((prev) =>
-      prev.map((p) => (p.id === paymentId ? { ...p, estado: 'APROBADO' as const } : p))
-    );
-
-    // Update student payment status to PAGADO
-    setStudents((prev) =>
-      prev.map((s) => (s.id === payment.studentId ? { ...s, estadoPago: 'PAGADO' as const } : s))
-    );
-
-    if (currentUser?.id === payment.studentId) {
-      setCurrentUser((prev) => (prev ? { ...prev, estadoPago: 'PAGADO' as const } : null));
-    }
+  // Aprobar / Rechazar comprobantes: pega al endpoint real de Django y refresca en caliente.
+  const handleApprovePayment = async (paymentId: string) => {
+    await fetch(`/api/payments/${paymentId}/approve/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'aprobar' }),
+    }).catch(() => {});
+    await refreshDashboardData();
   };
 
-  // Admin Fee Management Actions (RBAC Restricted)
-  const handleUpdateStudentFee = (studentId: string, newFee: number) => {
+  const handleRejectPayment = async (paymentId: string) => {
+    await fetch(`/api/payments/${paymentId}/approve/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'rechazar' }),
+    }).catch(() => {});
+    await refreshDashboardData();
+  };
+
+  // Gestión de tarifas (RBAC Admin): individual y general, ambas contra PostgreSQL.
+  const handleUpdateStudentFee = async (studentId: string, newFee: number) => {
     if (currentUser?.role !== 'ADMIN') return;
-    setStudents((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, montoMensualidad: newFee } : s))
-    );
-    if (currentUser?.id === studentId) {
-      setCurrentUser((prev) => (prev ? { ...prev, montoMensualidad: newFee } : null));
-    }
+    await fetch(`/api/students/${studentId}/update-fee/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monto: newFee }),
+    }).catch(() => {});
+    await refreshDashboardData();
   };
 
-  const handleUpdateAllFees = (newGeneralFee: number) => {
+  const handleUpdateAllFees = async (newGeneralFee: number) => {
     if (currentUser?.role !== 'ADMIN') return;
-    setStudents((prev) =>
-      prev.map((s) => (s.role === 'STUDENT' ? { ...s, montoMensualidad: newGeneralFee } : s))
-    );
-    fetch('/api/config/update-fee/', {
+    await fetch('/api/config/update-fee/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ monto: newGeneralFee }),
     }).catch(() => {});
+    await refreshDashboardData();
   };
 
-  const handleRejectPayment = (paymentId: string) => {
-    setPayments((prev) =>
-      prev.map((p) => (p.id === paymentId ? { ...p, estado: 'RECHAZADO' as const } : p))
-    );
+  // Registro de nuevo estudiante (Admin): crea la fila real en PostgreSQL y refresca el roster.
+  const handleRegisterStudent = async (newStudentData: Partial<UserProfile>) => {
+    await fetch('/api/students/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: newStudentData.name,
+        email: newStudentData.email,
+        telefono: newStudentData.telefono,
+        cinturon: newStudentData.cinturon,
+        diaVencimiento: newStudentData.diaVencimiento,
+      }),
+    }).catch(() => {});
+    await refreshDashboardData();
   };
 
-  // Admin Register Student Action
-  const handleRegisterStudent = (newStudentData: Partial<UserProfile>) => {
-    const newStudent: UserProfile = {
-      id: `user-${Date.now()}`,
-      name: newStudentData.name || 'Nuevo Alumno',
-      email: newStudentData.email || 'alumno@graciebarra.com',
-      avatarUrl: newStudentData.avatarUrl,
-      role: 'STUDENT',
-      cinturon: newStudentData.cinturon || 'BLANCO',
-      telefono: newStudentData.telefono || '+57 300 000 0000',
-      montoMensualidad: newStudentData.montoMensualidad || 120000,
-      diaVencimiento: newStudentData.diaVencimiento || 5,
-      estadoPago: 'PENDIENTE',
-      activo: true,
-      fechaRegistro: new Date().toISOString().split('T')[0],
-    };
-
-    setStudents((prev) => [newStudent, ...prev]);
-  };
-
-  // Admin Trigger Automated Email Reminders
-  const handleConfirmSendEmailReminders = () => {
-    const pendingStudents = students.filter(
-      (s) => s.role === 'STUDENT' && (s.estadoPago === 'PENDIENTE' || s.estadoPago === 'VENCIDO')
-    );
-
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-      2,
-      '0'
-    )}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(
-      2,
-      '0'
-    )}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const newLogs: EmailAlertLog[] = pendingStudents.map((student) => ({
-      id: `alert-${Date.now()}-${student.id}`,
-      studentId: student.id,
-      studentName: student.name,
-      studentEmail: student.email,
-      tipoAlerta: 'RECORDATORIO_VENCIMIENTO',
-      asunto: 'Recordatorio de Pago - Gracie Barra Guarne',
-      mensaje: `Hola ${student.name}, te recordamos que tu cuota mensual de Jiu-Jitsu ($${student.montoMensualidad.toLocaleString(
-        'es-CO'
-      )} COP) en Gracie Barra Guarne se encuentra pendiente. Ingresa a la PWA para adjuntar tu comprobante.`,
-      fechaEnvio: formattedDate,
-      exitoso: true,
-    }));
-
-    setAlertsHistory((prev) => [...newLogs, ...prev]);
+  // Disparo de recordatorios automáticos (Admin): crea las alertas reales en PostgreSQL.
+  const handleConfirmSendEmailReminders = async () => {
+    await fetch('/api/send-reminders/', { method: 'POST' }).catch(() => {});
+    await refreshDashboardData();
   };
 
   const personalPayments = currentUser
@@ -370,6 +337,7 @@ export default function App() {
             students={students}
             payments={payments}
             alertsHistory={alertsHistory}
+            isLoadingData={isLoadingData}
             onApprovePayment={handleApprovePayment}
             onRejectPayment={handleRejectPayment}
             onOpenRegisterModal={() => setIsRegisterOpen(true)}
@@ -403,11 +371,7 @@ export default function App() {
       <LoginModal
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        onSelectRole={(role) => {
-          const matched = students.find((s) => s.role === role);
-          if (matched) setCurrentUser(matched);
-          setIsLoginOpen(false);
-        }}
+        onSelectRole={() => {}}
         onGoogleSignIn={handleGoogleSignIn}
       />
 
@@ -415,6 +379,7 @@ export default function App() {
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
         onRegisterStudent={handleRegisterStudent}
+        globalFee={globalFee}
       />
 
       <EmailAlertsModal

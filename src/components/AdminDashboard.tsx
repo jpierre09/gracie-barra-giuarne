@@ -7,20 +7,18 @@ import {
   AlertTriangle,
   Users,
   Search,
-  Filter,
   UserPlus,
   Send,
   CheckCircle2,
   XCircle,
   Clock,
   ExternalLink,
-  ChevronRight,
   TrendingUp,
   Settings,
   Edit3,
   X,
   Save,
-  Shield,
+  Database,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -28,6 +26,7 @@ interface AdminDashboardProps {
   students: UserProfile[];
   payments: PaymentRecord[];
   alertsHistory: EmailAlertLog[];
+  isLoadingData?: boolean;
   onApprovePayment: (paymentId: string) => void;
   onRejectPayment: (paymentId: string) => void;
   onOpenRegisterModal: () => void;
@@ -41,6 +40,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   students,
   payments,
   alertsHistory,
+  isLoadingData = false,
   onApprovePayment,
   onRejectPayment,
   onOpenRegisterModal,
@@ -198,6 +198,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Live Data Loading Indicator */}
+      {isLoadingData && (
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5">
+          <Database className="w-3.5 h-3.5 text-[#005596] animate-pulse" />
+          <span>Cargando datos en vivo desde PostgreSQL...</span>
+        </div>
+      )}
 
       {/* Analytics Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -461,7 +469,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {filteredStudents.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-500 text-xs">
-                      No se encontraron estudiantes con los filtros seleccionados.
+                      {isLoadingData
+                        ? 'Cargando estudiantes desde la base de datos...'
+                        : totalStudentsCount === 0
+                        ? 'Aún no hay estudiantes registrados en la base de datos. Usa "Nuevo Estudiante" para agregar el primero.'
+                        : 'No se encontraron estudiantes con los filtros seleccionados.'}
                     </td>
                   </tr>
                 )}
@@ -560,6 +572,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </td>
                   </tr>
                 ))}
+
+                {payments.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-500 text-xs">
+                      {isLoadingData
+                        ? 'Cargando pagos desde la base de datos...'
+                        : 'Aún no se han registrado pagos en la base de datos.'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -606,6 +628,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
             ))}
+
+            {alertsHistory.length === 0 && (
+              <p className="py-8 text-center text-slate-500 text-xs">
+                {isLoadingData
+                  ? 'Cargando historial de alertas...'
+                  : 'Aún no se han enviado alertas automáticas. Usa "Disparar Recordatorios" para notificar a los estudiantes con pagos pendientes o vencidos.'}
+              </p>
+            )}
           </div>
         </div>
       )}
