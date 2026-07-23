@@ -2,8 +2,7 @@
 const CACHE_NAME = 'gb-guarne-v1';
 const ASSETS_TO_CACHE = [
   '/',
-  '/manifest.json',
-  'https://cdn.tailwindcss.com'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
