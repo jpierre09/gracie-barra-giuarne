@@ -41,6 +41,33 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
 
+  // Sync initial configuration & state from Django REST API
+  useEffect(() => {
+    fetch('/api/config/')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.tarifa_mensual_base === 'number') {
+          const globalFee = data.tarifa_mensual_base;
+          setStudents((prev) =>
+            prev.map((s) => (s.role === 'STUDENT' ? { ...s, montoMensualidad: globalFee } : s))
+          );
+          setCurrentUser((prev) =>
+            prev && prev.role === 'STUDENT' ? { ...prev, montoMensualidad: globalFee } : prev
+          );
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/me/')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.authenticated && data.user) {
+          setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Save changes to localStorage
   useEffect(() => {
     localStorage.setItem('gb_guarne_students', JSON.stringify(students));
@@ -172,6 +199,19 @@ export default function App() {
 
     setPayments((prev) => [newPayment, ...prev]);
 
+    // Send payment report to Django REST API
+    fetch('/api/payments/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId: currentUser.id,
+        mesAnio,
+        monto,
+        metodoPago: metodo,
+        comprobanteUrl,
+      }),
+    }).catch(() => {});
+
     // Update current student state to PENDIENTE (En revisión por aprobar)
     const updatedUser = { ...currentUser, estadoPago: 'PENDIENTE' as const };
     setCurrentUser(updatedUser);
@@ -213,6 +253,11 @@ export default function App() {
     setStudents((prev) =>
       prev.map((s) => (s.role === 'STUDENT' ? { ...s, montoMensualidad: newGeneralFee } : s))
     );
+    fetch('/api/config/update-fee/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monto: newGeneralFee }),
+    }).catch(() => {});
   };
 
   const handleRejectPayment = (paymentId: string) => {

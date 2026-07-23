@@ -1,12 +1,16 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 
 urlpatterns = [
-    path('', views.index_view, name='index'),
-    path('login/', views.login_view, name='login'),
-    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('perfil/', views.student_profile, name='student_profile'),
-    path('reportar-pago/', views.report_payment, name='report_payment'),
-    path('aprobar-pago/<int:pago_id>/', views.approve_payment, name='approve_payment'),
-    path('enviar-alertas/', views.trigger_email_reminders, name='trigger_email_reminders'),
+    # REST API Endpoints
+    path('api/config/', views.api_config, name='api_config'),
+    path('api/config/update-fee/', views.api_update_fee, name='api_update_fee'),
+    path('api/me/', views.api_me, name='api_me'),
+    path('api/students/', views.api_students, name='api_students'),
+    path('api/payments/', views.api_payments, name='api_payments'),
+    path('api/payments/<int:pago_id>/approve/', views.api_approve_payment, name='api_approve_payment'),
+    path('api/send-reminders/', views.api_send_reminders, name='api_send_reminders'),
+
+    # SPA Catch-All Route (serves React dist/index.html)
+    re_path(r'^.*$', views.spa_index_view, name='spa_index'),
 ]

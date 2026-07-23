@@ -17,9 +17,31 @@ async function startServer() {
     res.json({
       status: 'ok',
       team: 'Gracie Barra Guarne',
-      architecture: 'Monolithic PWA with Docker & Django Ready Backend',
+      architecture: 'Unified PWA React SPA + REST API Backend',
       language: 'Spanish',
       timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Config Fee API
+  let currentGlobalFee = 0.0;
+  app.get('/api/config/', (_req, res) => {
+    res.json({
+      status: 'ok',
+      tarifa_mensual_base: currentGlobalFee,
+      currency: 'COP'
+    });
+  });
+
+  app.post('/api/config/update-fee/', (req, res) => {
+    const { monto } = req.body;
+    if (typeof monto === 'number') {
+      currentGlobalFee = monto;
+    }
+    res.json({
+      success: true,
+      message: `Tarifa general actualizada a $${currentGlobalFee} COP`,
+      tarifa_mensual_base: currentGlobalFee
     });
   });
 
