@@ -3,7 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:3000 --workers 3 graciebarra.wsgi:application
+    command: sh -c "python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:3000 --workers 3 graciebarra.wsgi:application"
     volumes:
       - .:/app
       - /app/node_modules
@@ -12,9 +12,12 @@ services:
       - "3000:3000"
     environment:
       - DEBUG=1
-      - SECRET_KEY=django-insecure-graciebarra-guarne-secret-key-2026
+      - SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-graciebarra-guarne-secret-key-2026}
       - DATABASE_URL=postgres://gb_user:gb_password@db:5432/graciebarra_db
       - ALLOWED_HOSTS=*
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-profesor@graciebarra.com}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-GracieBarra2026!}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-sample-google-client-id}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-sample-google-client-secret}
     depends_on:

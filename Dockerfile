@@ -58,5 +58,10 @@ RUN python manage.py collectstatic --noinput || true
 # Exponer el puerto configurado en docker-compose.yml
 EXPOSE 3000
 
+# Dar permisos de ejecución al script de entrada
+RUN chmod +x /app/docker-entrypoint.sh
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
 # Comando de arranque para Gunicorn en producción
 CMD ["gunicorn", "--bind", "0.0.0.0:3000", "--workers", "3", "graciebarra.wsgi:application"]
