@@ -7,9 +7,7 @@
     <!-- Student Header Card -->
     <div class="bg-gradient-to-r from-gb-darkblue to-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
         <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-gb-red flex items-center justify-center font-extrabold text-white text-2xl shadow-lg border-2 border-white/20">
-                GB
-            </div>
+            <img src="/gb-logo.jpg" alt="Gracie Barra Escudo Oficial" class="w-16 h-16 rounded-2xl object-cover shadow-2xl border-2 border-red-600/60 p-0.5 bg-black" referrerPolicy="no-referrer">
             <div>
                 <span class="text-xs text-red-400 font-bold uppercase tracking-wider">Perfil Privado del Estudiante</span>
                 <h2 class="text-2xl font-black text-white">{{ user.get_full_name|default:user.username }}</h2>
