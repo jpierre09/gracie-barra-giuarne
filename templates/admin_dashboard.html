@@ -5,7 +5,7 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Top Admin Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
         <div>
             <div class="inline-flex items-center gap-2 text-xs text-red-400 font-bold uppercase tracking-wider bg-red-950/50 px-3 py-1 rounded-full border border-red-900/50">
                 <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Panel Protegido de Administrador
@@ -14,11 +14,21 @@
             <p class="text-xs text-slate-400">Control de ingresos, mensualidades de estudiantes y alertas automáticas</p>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-            <a href="/enviar-alertas/" class="inline-flex items-center gap-2 bg-gb-red hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-lg border border-red-500/30">
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="document.getElementById('tarifaModal').classList.remove('hidden')" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs transition shadow-lg border border-emerald-500/30 uppercase tracking-wider">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 12v-2m0 0e1.11 0 2.08-.402 2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Configuración de Tarifas
+            </button>
+
+            <button onclick="document.getElementById('registerModal').classList.remove('hidden')" class="inline-flex items-center gap-2 bg-gb-blue hover:bg-blue-600 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition shadow-lg border border-blue-500/30 uppercase tracking-wider">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                + Registrar Estudiante
+            </button>
+
+            <button onclick="document.getElementById('alertModal').classList.remove('hidden')" class="inline-flex items-center gap-2 bg-gb-red hover:bg-red-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition shadow-lg border border-red-500/30 uppercase tracking-wider">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                Enviar Recordatorios Automáticos
-            </a>
+                Nueva Alerta
+            </button>
         </div>
     </div>
 
@@ -179,6 +189,105 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- MODAL 1: Registrar Estudiante -->
+    <div id="registerModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white uppercase tracking-wider">+ Registrar Nuevo Estudiante</h3>
+                <button onclick="document.getElementById('registerModal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <form method="post" action="{% url 'admin_dashboard' %}" class="space-y-4 text-left">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="register_student">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre Completo del Alumno</label>
+                    <input type="text" name="nombre" required placeholder="Ej. Carlos Mario Gómez" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-blue-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label>
+                    <input type="email" name="email" required placeholder="estudiante@ejemplo.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-blue-600">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono de Contacto</label>
+                        <input type="text" name="telefono" placeholder="+57 300 000 0000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-blue-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Día Límite de Pago</label>
+                        <input type="number" name="dia_vencimiento" value="5" min="1" max="31" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-blue-600 font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Cinturón / Grado BJJ</label>
+                    <select name="cinturon" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-blue-600">
+                        <option value="BLANCO">⚪ Cinturón Blanco</option>
+                        <option value="AZUL">🔵 Cinturón Azul</option>
+                        <option value="MORADO">🟣 Cinturón Morado</option>
+                        <option value="MARRON">🟤 Cinturón Marrón</option>
+                        <option value="NEGRO">⚫ Cinturón Negro</option>
+                    </select>
+                </div>
+                <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+                    <span class="block text-[10px] font-bold uppercase text-slate-400">Valor de Cuota</span>
+                    <p class="text-xs font-mono font-bold text-emerald-400 mt-0.5">$120,000 COP (Asignado Automáticamente)</p>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('registerModal').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-gb-blue hover:bg-blue-600 text-white text-xs font-extrabold">Guardar Estudiante</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Configuración de Tarifas -->
+    <div id="tarifaModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white uppercase tracking-wider">Configuración de Tarifas (RBAC)</h3>
+                <button onclick="document.getElementById('tarifaModal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <p class="text-xs text-slate-400">Modifica la tarifa mensual general estándar por defecto para la academia.</p>
+            <form method="post" action="{% url 'admin_dashboard' %}" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_global_fee">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Tarifa Mensual Base ($ COP)</label>
+                    <input type="number" name="monto_general" value="120000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-emerald-500 outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('tarifaModal').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-extrabold uppercase tracking-wider">Actualizar Tarifa Global</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Enviar Recordatorios Automáticos & Bitácora -->
+    <div id="alertModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-red-500/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white uppercase tracking-wider">Enviar Recordatorios Automáticos</h3>
+                <button onclick="document.getElementById('alertModal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <p class="text-xs text-slate-300">Dispara notificaciones masivas por correo electrónico a todos los estudiantes con estatus de pago PENDIENTE o VENCIDO.</p>
+            
+            <a href="/enviar-alertas/" class="w-full block text-center bg-gb-red hover:bg-red-700 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg transition">
+                🚀 Confirmar y Disparar Lote de Correos Ahora
+            </a>
+
+            <div class="pt-2 border-t border-slate-800">
+                <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Bitácora de Historial de Auditoría</h4>
+                <div class="bg-slate-950 p-3 rounded-xl max-h-36 overflow-y-auto text-xs space-y-2 text-slate-400">
+                    <div class="flex justify-between items-center text-[11px]">
+                        <span class="text-white font-semibold">Último disparo en lote</span>
+                        <span class="text-emerald-400 font-bold">✓ Completado</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500">Notificaciones enviadas con éxito a todos los alumnos morosos o próximos a vencer.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
