@@ -232,7 +232,7 @@
                 </div>
                 <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                     <span class="block text-[10px] font-bold uppercase text-slate-400">Valor de Cuota</span>
-                    <p class="text-xs font-mono font-bold text-emerald-400 mt-0.5">$120,000 COP (Asignado Automáticamente)</p>
+                    <p class="text-xs font-mono font-bold text-emerald-400 mt-0.5">${{ tarifa_vigente_int }} COP (Asignado Automáticamente desde Base de Datos)</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="document.getElementById('registerModal').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">Cancelar</button>
@@ -249,13 +249,13 @@
                 <h3 class="text-base font-bold text-white uppercase tracking-wider">Configuración de Tarifas (RBAC)</h3>
                 <button onclick="document.getElementById('tarifaModal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
             </div>
-            <p class="text-xs text-slate-400">Modifica la tarifa mensual general estándar por defecto para la academia.</p>
+            <p class="text-xs text-slate-400">Modifica la tarifa mensual general estándar guardada en PostgreSQL.</p>
             <form method="post" action="{% url 'admin_dashboard' %}" class="space-y-4">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_global_fee">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Tarifa Mensual Base ($ COP)</label>
-                    <input type="number" name="monto_general" value="120000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-emerald-500 outline-none">
+                    <input type="number" name="monto_general" value="{{ tarifa_vigente_int }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:border-emerald-500 outline-none">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="document.getElementById('tarifaModal').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">Cancelar</button>

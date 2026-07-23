@@ -98,3 +98,16 @@ class AlertaEmail(models.Model):
 
     def __str__(self):
         return f"Alerta para {self.estudiante.user.email} - {self.fecha_envio.strftime('%Y-%m-%d %H:%M')}"
+
+
+class ConfiguracionAcademia(models.Model):
+    tarifa_mensual_base = models.DecimalField(max_digits=10, decimal_places=2, default=120000.00)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def get_tarifa_actual(cls):
+        config, _ = cls.objects.get_or_create(id=1, defaults={'tarifa_mensual_base': 120000.00})
+        return config.tarifa_mensual_base
+
+    def __str__(self):
+        return f"Configuración Academia - Tarifa Base: ${self.tarifa_mensual_base}"

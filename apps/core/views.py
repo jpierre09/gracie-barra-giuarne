@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Sum
 from django.utils import timezone
-from .models import UserProfile, Pago, AlertaEmail
+from .models import UserProfile, Pago, AlertaEmail, ConfiguracionAcademia
 
 from .signals import sync_user_role
 
@@ -50,6 +50,65 @@ def admin_dashboard(request):
     if not hasattr(request.user, 'profile') or request.user.profile.role != 'ADMIN':
         return HttpResponseForbidden("Acceso Restringido: Esta vista requiere rol de Administrador (Profesor).")
     
+    # Handle POST Actions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'update_global_fee':
+            monto_input = request.POST.get('monto_general', '120000').strip()
+            try:
+                nuevo_monto = float(monto_input)
+                config, _ = ConfiguracionAcademia.objects.get_or_create(id=1)
+                config.tarifa_mensual_base = nuevo_monto
+                config.save()
+            except ValueError:
+                pass
+            return redirect('admin_dashboard')
+
+        elif action == 'register_student':
+            nombre = request.POST.get('nombre', '').strip()
+            email = request.POST.get('email', '').strip().lower()
+            telefono = request.POST.get('telefono', '').strip()
+            dia_vencimiento = int(request.POST.get('dia_vencimiento', 5))
+            cinturon = request.POST.get('cinturon', 'BLANCO')
+
+            if email:
+                username = email.split('@')[0]
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={'username': username, 'first_name': nombre}
+                )
+                if not created and nombre:
+                    user.first_name = nombre
+                    user.save()
+
+                # Get dynamic global fee from PostgreSQL DB
+                tarifa_actual = ConfiguracionAcademia.get_tarifa_actual()
+
+                profile, _ = UserProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'role': 'STUDENT',
+                        'cinturon': cinturon,
+                        'telefono': telefono,
+                        'monto_mensualidad': tarifa_actual,
+                        'dia_vencimiento': dia_vencimiento,
+                        'estado_pago': 'PENDIENTE',
+                        'activo': True
+                    }
+                )
+                if not created:
+                    profile.cinturon = cinturon
+                    profile.telefono = telefono
+                    profile.monto_mensualidad = tarifa_actual
+                    profile.dia_vencimiento = dia_vencimiento
+                    profile.save()
+
+            return redirect('admin_dashboard')
+
+    # Get dynamic global fee
+    tarifa_actual = ConfiguracionAcademia.get_tarifa_actual()
+    
     # Financial metrics
     total_revenue = Pago.objects.filter(estado='APROBADO').aggregate(Sum('monto'))['monto__sum'] or 0
     
@@ -72,6 +131,8 @@ def admin_dashboard(request):
         'students': students,
         'recent_payments': recent_payments,
         'alerts_history': alerts_history,
+        'tarifa_vigente': tarifa_actual,
+        'tarifa_vigente_int': int(tarifa_actual),
     }
     return render(request, 'admin_dashboard.html', context)
 
